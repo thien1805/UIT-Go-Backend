@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,14 +22,45 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-sn%ioip778x07lzoo5#c&)^9tm(bugfw$c^11^s8d+v4x%@*-n'
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*').split(',') if config('ALLOWED_HOSTS', default='*') != '*' else ['*']
 
-
+AUTH_USER_MODEL = 'authentication.User'
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+    'EXCEPTION_HANDLER': 'authentication.exceptions.custom_exception_handler',
+}
+# Internal Service Token for inter-service communication
+INTERNAL_SERVICE_TOKEN = config('INTERNAL_SERVICE_TOKEN', default='your-internal-service-token-here')
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
+    
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': config('JWT_SECRET', default='your-secret-key-change-in-production'),
+    'VERIFYING_KEY': None,
+    
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+}
 # Application definition
 
 INSTALLED_APPS = [
@@ -37,6 +70,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
+    'corsheaders',
+    'authentication',
+    'drivers',
 ]
 
 MIDDLEWARE = [
@@ -69,13 +108,20 @@ TEMPLATES = [
 WSGI_APPLICATION = 'user_service.wsgi.application'
 
 
-# Database
+# Database Configuration - Cấu hình Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',  # Sử dụng PostgreSQL thay SQLite
+        'NAME': config('DB_NAME', default='user_service'),      # Tên database
+        'USER': config('DB_USER', default='postgres'),          # Username PostgreSQL
+        'PASSWORD': config('DB_PASSWORD', default='postgres123'), # Password
+        'HOST': config('DB_HOST', default='localhost'),         # Host (localhost hoặc container name)
+        'PORT': config('DB_PORT', default='5432'),              # Port PostgreSQL
+        'OPTIONS': {
+            'connect_timeout': 10,  # Timeout kết nối 10 giây
+        },
     }
 }
 

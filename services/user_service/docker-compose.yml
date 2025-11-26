@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  user-db:
+    image: postgres:15-alpine
+    container_name: userservice-db #tên container khi khởi chạy
+    environment:
+      # Database config 
+      POSTGRES_DB: ${DB_NAME:-user_service}      # Tên database
+      POSTGRES_USER: ${DB_USER:-postgres}          # Username PostgreSQL
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres123} # Password
+    ports:
+      - "${DB_PORT:-5432}:5432" #host:container 
+    volumes:
+      - user-db-data:/var/lib/postgresql/data  #lưu dữ liệu vào volume (dữ liệu không mất khi xoá container)
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  #chạy script SQL khi khởi taọ DB
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d user-service"] #kiểm tra sức khoẻ của container
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: #kết nối vào network: userservice-network
+      - userservice-network
+    restart: unless-stopped #tự động khởi động lại khi container dừng
+
+
+    #pgAdmin
+    pgadmin:
+      image: dpage/pgadmin4:latest
+      container_name: userservice-pgadmin
+      environment: #công cụ quản lí postgresql qua web
+        PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@userservice.com}
+        PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+        PGADMIN_CONFIG_SERVER_MODE: 'False'
+      ports:
+        - "${PGADMIN_PORT: -5050}:80" #host:container
+      volumes:
+        - pgadmin-data:/var/lib/pgadmin
+      networks:
+        - userservice-network
+      depends_on:
+        - user-db #kết nối vào cùng network với dtb
+      restart: unless-stopped
+      profiles:
+        - dev # Chỉ chạy khi: docker-compose --profile dev up
+
+volumes:
+  user-db-data:
+    driver: local
+  pgadmin-data:
+    driver: local
+  
+networks:
+  userservice-network:
+    driver: bridge
+    name: userservice-network
+
+
+
+
