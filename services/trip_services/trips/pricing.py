@@ -301,3 +301,4 @@ def calculate_trip_fare(
         dropoff_lat, dropoff_lng,
         vehicle_type
     )
+

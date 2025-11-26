@@ -89,9 +89,8 @@ services:
       - "5432:5432"  # Chỉ expose cho dev, production nên ẩn
     volumes:
       - user-db-data:/var/lib/postgresql/data
-      - ./services/user_service/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d user_service"]
+      test: ["CMD-SHELL", "pg_isready -U ${USER_DB_USER:-postgres} -d ${USER_DB_NAME:-user_service}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -114,9 +113,8 @@ services:
       - "5433:5432"  # Port khác để tránh conflict
     volumes:
       - trip-db-data:/var/lib/postgresql/data
-      - ./services/trip_services/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d trip_service"]
+      test: ["CMD-SHELL", "pg_isready -U ${TRIP_DB_USER:-postgres} -d ${TRIP_DB_NAME:-trip_service}"]
       interval: 10s
       timeout: 5s
       retries: 5

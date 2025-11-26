@@ -44,3 +44,4 @@ class JWTAuthMiddleware(MiddlewareMixin):
             # Token không hợp lệ
             request.user = AnonymousUser()
             return
+

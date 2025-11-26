@@ -43,31 +43,12 @@ COPY . .
 # Tạo thư mục cho static files và media files
 RUN mkdir -p /app/staticfiles /app/mediafiles
 
+# Copy và set permission cho entrypoint script
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
 # Expose port 8001 (User Service)
 EXPOSE 8001
-
-# Script để chạy migrations và start server
-# Tạo script entrypoint
-RUN echo '#!/bin/bash\n\
-set -e\n\
-\n\
-echo "⏳ Đợi database sẵn sàng..."\n\
-while ! pg_isready -h $DB_HOST -p $DB_PORT -U $DB_USER; do\n\
-  echo "Database chưa sẵn sàng, đợi 2 giây..."\n\
-  sleep 2\n\
-done\n\
-\n\
-echo "✅ Database đã sẵn sàng!"\n\
-\n\
-echo "🔄 Chạy migrations..."\n\
-python manage.py migrate --noinput\n\
-\n\
-echo "📦 Thu thập static files..."\n\
-python manage.py collectstatic --noinput --clear || true\n\
-\n\
-echo "🚀 Khởi động User Service trên port 8001..."\n\
-python manage.py runserver 0.0.0.0:8001\n\
-' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 # Set entrypoint
 ENTRYPOINT ["/app/entrypoint.sh"]

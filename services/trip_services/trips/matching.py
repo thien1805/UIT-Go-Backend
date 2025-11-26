@@ -202,3 +202,4 @@ def assign_driver_for_trip(pickup_lat: float, pickup_lng: float, vehicle_type: s
     if result:
         return result['driver_id']
     return None
+

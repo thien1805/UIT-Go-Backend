@@ -20,5 +20,4 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/trips/', include('trips.urls')),  # Include trips API endpoints
-    path('api/auth/', include('authentication.urls')),  # Placeholder cho auth (nếu cần)
 ]

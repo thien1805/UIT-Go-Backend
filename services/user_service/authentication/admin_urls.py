@@ -16,3 +16,4 @@ urlpatterns = [
     path('drivers/', admin_views.admin_list_drivers, name='list-drivers'),
     path('drivers/<uuid:driver_id>/approve/', admin_views.admin_approve_driver, name='approve-driver'),
 ]
+

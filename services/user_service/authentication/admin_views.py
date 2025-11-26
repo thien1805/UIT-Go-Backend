@@ -325,3 +325,4 @@ def admin_delete_user(request, user_id):
         'data': {},
         'message': 'Xóa user thành công'
     }, status=status.HTTP_200_OK)
+
