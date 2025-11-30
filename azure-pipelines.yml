@@ -1,0 +1,47 @@
+# azure-pipelines.yml
+
+trigger:
+- main  # Chạy pipeline khi có code push vào nhánh main
+
+pool:
+  vmImage: 'ubuntu-latest' # Sử dụng máy ảo Ubuntu của Azure
+
+jobs:
+  # JOB 1: Xử lý các service Node.js (Gateway, Trip, Driver)
+  - job: NodeServices
+    displayName: 'Build & Test Node.js Services'
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '18.x' # Chọn version Node tương thích
+      displayName: 'Install Node.js'
+
+    # Xử lý API Gateway
+    - script: |
+        cd api-gateway
+        npm install
+        # npm test (nếu bạn có viết test)
+      displayName: 'Install API Gateway'
+
+    # Xử lý Trip Service
+    - script: |
+        cd trip-service
+        npm install
+      displayName: 'Install Trip Service'
+
+  # JOB 2: Xử lý service Python (Django)
+  - job: DjangoService
+    displayName: 'Build & Test User Service'
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.11' # Chọn version Python tương thích
+        addToPath: true
+
+    - script: |
+        cd user_service
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        # Chạy kiểm tra xem code có lỗi cơ bản không
+        python manage.py check 
+      displayName: 'Install & Check Django'
