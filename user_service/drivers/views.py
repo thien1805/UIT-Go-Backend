@@ -1,4 +1,6 @@
 from django.shortcuts import render
+from django.conf import settings
+import requests
 
 # Create your views here.
 
@@ -107,7 +109,7 @@ def get_driver_profile_by_id(request, driver_id):
     Lấy thông tin tài xế bằng ID
     """
     try:
-        driver_profile = DriverProfile.objects.select_related('user').get(id=driver_id)
+        driver_profile = DriverProfile.objects.select_related('user').get(user_id=driver_id)
         serializer = DriverProfileSerializer(driver_profile)
         return Response({
             'success': True,
@@ -192,6 +194,7 @@ def update_driver_status(request):
         #Thông báo đến DriverService
         try:
             driver_service_url = getattr(settings, 'DRIVER_SERVICE_URL', None)
+            internal_service_token = getattr(settings, 'INTERNAL_SERVICE_TOKEN', None)
             #Nếu DriverService có URL và tài xế đang online, gửi thông báo đến DriverService
             if driver_service_url and is_online:
                 response = requests.put(
@@ -202,7 +205,7 @@ def update_driver_status(request):
                         'latitude': float(latitude) if latitude else None,
                         'longitude': float(longitude) if longitude else None
                     },
-                    headers={'X-Service-Token': getattr(settings, 'INTERNAL_SERVICE_TOKEN', None)},
+                    headers={'X-Internal-Service-Token': internal_service_token} if internal_service_token else {},
                     timeout=5
                 )
                 response.raise_for_status() #Nếu có lỗi, sẽ ném ra lỗi
@@ -214,7 +217,7 @@ def update_driver_status(request):
                     json={
                         'is_online': False
                     },
-                    headers={'X-Service-Token': getattr(settings, 'INTERNAL_SERVICE_TOKEN', None)}, #Token nội bộ để xác thực giữa các service
+                    headers={'X-Internal-Service-Token': internal_service_token} if internal_service_token else {},
                     timeout=5
                 )
                 response.raise_for_status() #Nếu có lỗi, sẽ ném ra lỗi
@@ -224,12 +227,12 @@ def update_driver_status(request):
         return Response({
             'success': True,
             'data': {
-                'driver_id': str(driver_profile.id),
+                'driver_id': str(user.id),
                 'is_online': is_online,
                 'vehicle_type': driver_profile.vehicle_type,
                 'updated_at': timezone.now().isoformat()
             },
-            'message': f"Cập nhật trạng thái online của tài xế {driver_profile.id} thành công"
+            'message': f"Cập nhật trạng thái online của tài xế {user.id} thành công"
         }, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({
@@ -247,18 +250,18 @@ def update_driver_stats(request, driver_id):
     Cập nhật thống kê của tài xế
     """
     
-    #Xác thực token nội bộ
-    service_token = request.headers.get('X-Service-Token')
+    #Xác thực internal service token
+    service_token = request.headers.get('X-Internal-Service-Token') or request.headers.get('X-Service-Token')
     if service_token != getattr(settings, 'INTERNAL_SERVICE_TOKEN', None):
         return Response({
             'success': False,
             'error': {
                 'code': 'FORBIDDEN',
-                'message': 'Token nội bộ không hợp lệ'
+                'message': 'Internal service token không hợp lệ'
             }
         }, status=status.HTTP_403_FORBIDDEN)
     try:
-        driver_profile = DriverProfile.objects.select_related('user').get(id=driver_id)
+        driver_profile = DriverProfile.objects.select_related('user').get(user_id=driver_id)
     except DriverProfile.DoesNotExist:
         return Response({
             'success': False,
